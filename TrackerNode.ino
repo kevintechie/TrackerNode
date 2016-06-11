@@ -25,8 +25,8 @@
 #define NODEID      2
 #define NETWORKID   100
 #define GATEWAYID   1
-#define FREQUENCY   RF69_915MHZ //Match this with the version of your Moteino! (others: RF69_433MHZ, RF69_868MHZ)
-#define KEY         "sampleEncryptKey" //has to be same 16 characters/bytes on all nodes, not more not less!
+#define FREQUENCY   RF69_915MHZ
+#define KEY         "ChangeMeChangeMe"
 #define IS_RFM69HCW true
 #define LED         8
 #define SERIAL_BAUD 115200
@@ -116,7 +116,7 @@ void setup() {
   sprintf(buff, "\nTransmitting at %d Mhz...", FREQUENCY == RF69_433MHZ ? 433 : FREQUENCY == RF69_868MHZ ? 868 : 915);
   Serial.println(buff);
 
-  tone(SPEAKER, 2800, 100);
+  // tone(SPEAKER, 2800, 100);
 }
 
 long lastPeriod = -1;
@@ -136,11 +136,23 @@ void loop() {
   //check for any received packets
   if (radio.receiveDone())
   {
+    Serial.print((int)radio.DATA[0]);
+    if (radio.DATA[0] == 2) {
+      blink(LED, 200);
+      /*
+      tone(SPEAKER, 2800, 200);
+      delay(200);
+      tone(SPEAKER, 2500, 200);
+      delay(200);
+      */
+    }
+    /*
     Serial.print('['); Serial.print(radio.SENDERID, DEC); Serial.print("] ");
     Serial.print("  [RX_RSSI:"); Serial.print(radio.RSSI); Serial.print("]");
     for (byte i = 0; i < radio.DATALEN; i++) {
       Serial.print((char)radio.DATA[i]);
     }
+    */
 
     if (radio.ACKRequested())
     {
@@ -148,7 +160,7 @@ void loop() {
       Serial.print(" - ACK sent");
       delay(10);
     }
-    Blink(LED, 5);
+    blink(LED, 5);
     Serial.println();
   }
 
@@ -206,13 +218,13 @@ void loop() {
       Serial.print(" ok!");
     else Serial.print(" nothing...");
     Serial.println();
-    Blink(LED, 3);
+    blink(LED, 3);
     lastPeriod = currPeriod;
   }
   gps.encode(gpsSerial.read());
 }
 
-void Blink(byte PIN, int DELAY_MS) {
+void blink(byte PIN, int DELAY_MS) {
   pinMode(PIN, OUTPUT);
   digitalWrite(PIN, HIGH);
   gps.encode(gpsSerial.read());
