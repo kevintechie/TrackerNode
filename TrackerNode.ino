@@ -100,7 +100,7 @@ void setup() {
   display.setTextColor(BLACK);
   display.setCursor(0, 0);
 
-  Serial.println("Arduino RFM69HCW Transmitter");
+  Serial.println("TrackerNode");
 
   // Hard Reset the RFM module
   pinMode(RFM69_RST, OUTPUT);
@@ -110,8 +110,8 @@ void setup() {
   delay(100);
 
   radio.initialize(FREQUENCY, NODEID, NETWORKID);
-  radio.setHighPower();    // Only for RFM69HCW & HW!
-  radio.setPowerLevel(31); // power output ranges from 0 (5dBm) to 31 (20dBm)
+  radio.setHighPower();
+  radio.setPowerLevel(31);
   radio.encrypt(KEY);
   char buff[50];
   sprintf(buff, "\nTransmitting at %d Mhz...", FREQUENCY == RF69_433MHZ ? 433 : FREQUENCY == RF69_868MHZ ? 868 : 915);
@@ -137,6 +137,17 @@ void loop() {
   //check for any received packets
   if (radio.receiveDone())
   {
+    Serial.print('['); Serial.print(radio.SENDERID, DEC); Serial.print("] ");
+    Serial.print("  [RX_RSSI:"); Serial.print(radio.RSSI); Serial.print("]");
+    for (byte i = 0; i < radio.DATALEN; i++) {
+      Serial.print((char)radio.DATA[i]);
+    }
+
+    if (radio.ACKRequested())
+    {
+      radio.sendACK();
+      Serial.print(" - ACK sent");
+    }
     if (radio.DATA[0] == 2) {
       blink(LED, 200);
       /*
@@ -145,25 +156,11 @@ void loop() {
         tone(SPEAKER, 2500, 200);
         delay(200);
       */
+    } else {
+      blink(LED, 5);
+      Serial.println();
     }
-    
-    Serial.print('['); Serial.print(radio.SENDERID, DEC); Serial.print("] ");
-    Serial.print("  [RX_RSSI:"); Serial.print(radio.RSSI); Serial.print("]");
-    for (byte i = 0; i < radio.DATALEN; i++) {
-      Serial.print((char)radio.DATA[i]);
-    }
- 
-    if (radio.ACKRequested())
-    {
-      radio.sendACK();
-      Serial.print(" - ACK sent");
-      delay(10);
-    }
-    
-    blink(LED, 5);
-    Serial.println();
   }
-
 
   while (gpsSerial.available() > 0) {
     if (gps.encode(gpsSerial.read())) {
@@ -223,16 +220,17 @@ void loop() {
   gps.encode(gpsSerial.read());
 }
 
-void blink(byte PIN, int DELAY_MS) {
+void blink(byte PIN, int delayMs) {
   pinMode(PIN, OUTPUT);
   digitalWrite(PIN, HIGH);
   gps.encode(gpsSerial.read());
-  delay(DELAY_MS);
+  delay(delayMs);
   gps.encode(gpsSerial.read());
   digitalWrite(PIN, LOW);
 }
 
 void drawGpsTime() {
+  gps.encode(gpsSerial.read());
   if (oldSeconds != second()) {
     oldSeconds = second();
     if (gps.time.isValid()) {
